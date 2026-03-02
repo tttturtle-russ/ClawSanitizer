@@ -110,3 +110,40 @@ Each scan provides a **Security Score** out of 100. The score starts at 100 and 
 *   **"Permission denied"**: Run the scanner with a user that has permission to read your `~/.openclaw` folder.
 *   **Score is 0**: If you have many critical findings, the score can bottom out at zero. Fix the critical issues first.
 *   **ClawHub connection fails**: S2 checks require an internet connection to verify skill reputation.
+
+## Contributing
+
+ClawSanitizer is an open-source project and we welcome your contributions.
+
+### Reporting Bugs
+If you find a security issue or a bug in the scanner, please open a GitHub issue with:
+*   A clear description of the problem.
+*   The version of ClawSanitizer you're using.
+*   Steps to reproduce the issue (if possible).
+
+### Development Setup
+To contribute code, you'll need Go installed on your machine.
+
+1.  Fork the repository and create your branch from `main`.
+2.  Install dependencies:
+    ```bash
+    go mod download
+    ```
+3.  Run the tests to ensure everything is working:
+    ```bash
+    go test ./...
+    ```
+4.  Run the linter to check for common issues:
+    ```bash
+    go vet ./...
+    ```
+5.  Build the project locally:
+    ```bash
+    go build -o clawsanitizer
+    ```
+
+### Submitting Pull Requests
+*   Keep your changes small and focused.
+*   Include tests for any new features or bug fixes.
+*   Ensure your code passes `go vet` and `go test`.
+*   Submit your pull request against the `main` branch.
