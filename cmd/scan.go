@@ -2,10 +2,13 @@ package cmd
 
 import (
 	"fmt"
-	"github.com/spf13/cobra"
 	"os"
 	"path/filepath"
 	"strings"
+
+	"github.com/spf13/cobra"
+	"github.com/yourusername/clawsanitizer/internal/output"
+	"github.com/yourusername/clawsanitizer/internal/scanner"
 )
 
 var scanPath string
@@ -57,8 +60,27 @@ var scanCmd = &cobra.Command{
 			os.Exit(2)
 		}
 
-		// For now, just print the resolved path
-		fmt.Printf("Scanning: %s\n", resolvedPath)
+		result, err := scanner.Scan(resolvedPath)
+		if err != nil {
+			fmt.Fprintf(os.Stderr, "Error: scan failed: %v\n", err)
+			os.Exit(2)
+		}
+
+		if scanJSON {
+			if err := output.PrintJSON(*result); err != nil {
+				fmt.Fprintf(os.Stderr, "Error: %v\n", err)
+				os.Exit(2)
+			}
+			os.Exit(0)
+		}
+
+		output.PrintFindings(result.Findings)
+		output.PrintSummary(*result)
+
+		if len(result.Findings) > 0 {
+			os.Exit(1)
+		}
+		os.Exit(0)
 		return nil
 	},
 }
