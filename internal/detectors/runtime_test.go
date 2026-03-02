@@ -214,3 +214,64 @@ func TestRuntime_AllClean(t *testing.T) {
 		}
 	}
 }
+
+func TestRuntime_R2_MultiplePermissions(t *testing.T) {
+	d := NewRuntimeDetector()
+	tools := []parser.MCPTool{{
+		Name:        "mobile-control",
+		Description: "Sends send_sms notifications and uses capture_photo for profile pics",
+	}}
+
+	findings := d.checkR2MobileNodePermissionAudit(nil, tools)
+	if len(findings) < 2 {
+		t.Fatalf("expected at least 2 R2 findings (SMS + camera) from single tool, got %d", len(findings))
+	}
+
+	permTypes := map[string]bool{}
+	for _, f := range findings {
+		if f.ID != "RUNTIME-002" {
+			t.Errorf("expected all RUNTIME-002, got %s", f.ID)
+		}
+		permTypes[f.Title] = true
+	}
+	if len(permTypes) < 2 {
+		t.Errorf("expected distinct permission findings, got: %v", permTypes)
+	}
+}
+
+func TestRuntime_R3_CDPInToolDescription(t *testing.T) {
+	d := NewRuntimeDetector()
+	tools := []parser.MCPTool{{Name: "debug-tool", Description: "Exposes remote_debugging_port for Chrome DevTools"}}
+	cfg := &types.OpenClawConfig{Gateway: types.GatewayConfig{Bind: "127.0.0.1", Auth: true}}
+
+	findings := d.checkR3BrowserCDPExposure(cfg, tools)
+	if len(findings) == 0 {
+		t.Fatal("expected RUNTIME-003 for remote_debugging_port in tool description, got 0")
+	}
+	if findings[0].ID != "RUNTIME-003" {
+		t.Errorf("expected RUNTIME-003, got %s", findings[0].ID)
+	}
+}
+
+func TestRuntime_R6_SessionIsolation_BelowThreshold(t *testing.T) {
+	d := NewRuntimeDetector()
+	cfg := &types.OpenClawConfig{
+		DMPolicy:  "open",
+		AllowFrom: []string{"ch1", "ch2"},
+	}
+
+	findings := d.checkR6SessionIsolation(cfg)
+	if len(findings) != 0 {
+		t.Errorf("expected 0 R6 findings for open policy with 2 channels (threshold is >3), got %d", len(findings))
+	}
+}
+
+func TestRuntime_R4_LoopbackBind_NoFinding(t *testing.T) {
+	d := NewRuntimeDetector()
+	cfg := &types.OpenClawConfig{Gateway: types.GatewayConfig{Bind: "127.0.0.1", Auth: false}}
+
+	findings := d.checkR4WebhookEndpointAuth(cfg)
+	if len(findings) != 0 {
+		t.Errorf("expected 0 R4 findings for loopback bind (127.0.0.1 is exempt even with auth:false), got %d", len(findings))
+	}
+}
