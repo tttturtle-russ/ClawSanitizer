@@ -46,6 +46,8 @@ func (d *SkillCompositeDetector) checkF1CredExfilInSameFile(skills []parser.Inst
 					Description: fmt.Sprintf("File %s both reads sensitive credential files and sends data to a remote network endpoint. This is the complete credential-theft flow.", cf.Name),
 					Remediation: "Remove this skill immediately and rotate all credentials. Check your network logs for outbound exfiltration.",
 					FilePath:    cf.Path,
+					OWASP:       types.OWASPLLM02,
+					CWE:         "CWE-200: Exposure of Sensitive Information to an Unauthorized Actor",
 				})
 			}
 		}
@@ -70,6 +72,8 @@ func (d *SkillCompositeDetector) checkF2TyposquatNoHashUnofficial(skillConfigs [
 				Title:       fmt.Sprintf("Skill '%s': typosquat name + no hash + unofficial source (high-confidence attack)", sc.Name),
 				Description: fmt.Sprintf("Skill '%s' combines three attack indicators: its name typosquats a known target, it has no integrity hash, and it comes from an unofficial source. This is a high-confidence supply chain attack.", sc.Name),
 				Remediation: "Remove this skill immediately.",
+				OWASP:       types.OWASPLLM03,
+				CWE:         "CWE-829: Inclusion of Functionality from Untrusted Control Sphere",
 			})
 		}
 	}
@@ -110,6 +114,8 @@ func (d *SkillCompositeDetector) checkF3PlatformImpersonationWithIOC(skills []pa
 				Title:       fmt.Sprintf("Skill '%s': platform impersonation + known IOC (confirmed malware)", s.Slug),
 				Description: fmt.Sprintf("Skill '%s' impersonates a platform name AND contains a known malicious IOC. This matches the SANDWORM_MODE attack pattern.", s.Slug),
 				Remediation: "Remove this skill immediately. This is a confirmed malware indicator.",
+				OWASP:       types.OWASPLLM03,
+				CWE:         "CWE-829: Inclusion of Functionality from Untrusted Control Sphere",
 			})
 		}
 	}
@@ -139,6 +145,8 @@ func (d *SkillCompositeDetector) checkG1AlwaysTrueEnvHeavy(skills []parser.Insta
 				Description: fmt.Sprintf("Skill '%s' sets always:true in its frontmatter AND requires more than 2 environment variables. This combination ensures the skill always runs and has broad access to environment data — a privilege escalation pattern.", s.Slug),
 				Remediation: "Review why this skill requires always-on execution and this many environment variables. Remove if not explicitly needed.",
 				FilePath:    s.SkillMD.Path,
+				OWASP:       types.OWASPLLM06,
+				CWE:         "CWE-250: Execution with Unnecessary Privileges",
 			})
 		}
 	}
@@ -170,6 +178,8 @@ func (d *SkillCompositeDetector) checkG2OpenClawInternalPaths(skills []parser.In
 				Title:       fmt.Sprintf("Skill '%s' accesses OpenClaw internal configuration paths", s.Slug),
 				Description: fmt.Sprintf("The skill references OpenClaw internal paths (%q). Skills should not access OpenClaw's own configuration files.", truncate(match, 60)),
 				Remediation: "Remove this skill. Accessing OpenClaw internals is not a legitimate skill capability.",
+				OWASP:       types.OWASPLLM06,
+				CWE:         "CWE-22: Path Traversal",
 			})
 		}
 	}
@@ -194,6 +204,8 @@ func (d *SkillCompositeDetector) checkG3RuntimeRemoteFetch(skills []parser.Insta
 					Description: fmt.Sprintf("File %s fetches content from a remote URL and passes it to an execution function. This allows the skill author to change the skill's behaviour at any time after installation.", cf.Name),
 					Remediation: "Remove this skill. Runtime remote instruction fetch is a characteristic of C2-controlled malware.",
 					FilePath:    cf.Path,
+					OWASP:       types.OWASPLLM01,
+					CWE:         "CWE-494: Download of Code Without Integrity Check",
 				})
 			}
 		}

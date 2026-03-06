@@ -41,6 +41,8 @@ func (d *SupplyChainDetector) checkS1HashVerification(cfg *types.OpenClawConfig)
 				Title:       fmt.Sprintf("Skill '%s' has no integrity hash", skill.Name),
 				Description: fmt.Sprintf("The skill '%s' is installed without a cryptographic hash. This means its code cannot be verified for tampering.", skill.Name),
 				Remediation: "Re-install the skill from ClawHub to get a verified hash, or remove the skill if it came from an unofficial source.",
+				OWASP:       types.OWASPLLM03,
+				CWE:         "CWE-494: Download of Code Without Integrity Check",
 			})
 		}
 	}
@@ -66,6 +68,8 @@ func (d *SupplyChainDetector) checkS2ClawHubReputation(cfg *types.OpenClawConfig
 				Title:       fmt.Sprintf("Skill '%s' is flagged as malicious on ClawHub", skill.Name),
 				Description: fmt.Sprintf("ClawHub's registry has flagged '%s' as malicious. Reason: %s", skill.Name, reason),
 				Remediation: "Immediately remove this skill. Go to OpenClaw Settings → Skills → Remove.",
+				OWASP:       types.OWASPLLM03,
+				CWE:         "CWE-829: Inclusion of Functionality from Untrusted Control Sphere",
 			})
 			continue
 		}
@@ -77,6 +81,8 @@ func (d *SupplyChainDetector) checkS2ClawHubReputation(cfg *types.OpenClawConfig
 				Title:       fmt.Sprintf("Skill '%s' is flagged as suspicious on ClawHub", skill.Name),
 				Description: fmt.Sprintf("ClawHub's security scan has flagged '%s' as suspicious. It may contain harmful instructions or attempt to exfiltrate data.", skill.Name),
 				Remediation: "Review this skill's SKILL.md and source code before continuing to use it. Consider removing it if you cannot verify its safety.",
+				OWASP:       types.OWASPLLM03,
+				CWE:         "CWE-829: Inclusion of Functionality from Untrusted Control Sphere",
 			})
 		}
 	}
@@ -97,6 +103,8 @@ func (d *SupplyChainDetector) checkS3UnofficialSources(cfg *types.OpenClawConfig
 				Title:       fmt.Sprintf("Skill '%s' is from an unofficial source", skill.Name),
 				Description: fmt.Sprintf("'%s' was installed from '%s' which is not the official ClawHub marketplace. Skills from unofficial sources have not been reviewed for malware.", skill.Name, skill.Source),
 				Remediation: "Only install skills from the official ClawHub marketplace (clawhub://). Remove this skill and find an official alternative.",
+				OWASP:       types.OWASPLLM03,
+				CWE:         "CWE-829: Inclusion of Functionality from Untrusted Control Sphere",
 			})
 		}
 	}
@@ -120,6 +128,8 @@ func (d *SupplyChainDetector) checkS4EmptyHashes(cfg *types.OpenClawConfig) []ty
 					Title:       fmt.Sprintf("Skill '%s' has a high-risk name from an unverified source", skill.Name),
 					Description: fmt.Sprintf("'%s' has a name suggesting elevated system access ('%s') and is not from the official ClawHub marketplace.", skill.Name, pattern),
 					Remediation: "Remove this skill immediately unless you explicitly installed it from a trusted source and understand its purpose.",
+					OWASP:       types.OWASPLLM03,
+					CWE:         "CWE-829: Inclusion of Functionality from Untrusted Control Sphere",
 				})
 				break
 			}
@@ -162,6 +172,8 @@ func (d *SupplyChainDetector) checkC3RugPull(cfg *types.OpenClawConfig, skills [
 				Description: fmt.Sprintf("The SKILL.md for '%s' has been modified after installation. Config hash: %s. Computed hash: %s. This is the signature of a post-install rug pull attack.", sc.Name, sc.Hash, computed),
 				Remediation: "Reinstall this skill from ClawHub to get a clean verified copy. If the issue persists, remove the skill.",
 				FilePath:    installed.SkillMD.Path,
+				OWASP:       types.OWASPLLM03,
+				CWE:         "CWE-494: Download of Code Without Integrity Check",
 			})
 		}
 	}
@@ -179,6 +191,8 @@ func (d *SupplyChainDetector) checkC4ThinSKILLMD(skills []parser.InstalledSkill)
 				Title:       fmt.Sprintf("Skill '%s' has no SKILL.md", s.Slug),
 				Description: fmt.Sprintf("The skill '%s' has no SKILL.md documentation file. Legitimate skills document their capabilities and usage.", s.Slug),
 				Remediation: "Review this skill's source. If you cannot verify what it does, remove it.",
+				OWASP:       types.OWASPLLM03,
+				CWE:         "CWE-1104: Use of Unmaintained Third-Party Components",
 			})
 			continue
 		}
@@ -194,6 +208,8 @@ func (d *SupplyChainDetector) checkC4ThinSKILLMD(skills []parser.InstalledSkill)
 				Description: fmt.Sprintf("The SKILL.md for '%s' is unusually short (%d bytes / %d words). Thin SKILL.md files may indicate a hastily-created malicious skill.", s.Slug, byteLen, wordCount),
 				Remediation: "Review this skill carefully before use.",
 				FilePath:    s.SkillMD.Path,
+				OWASP:       types.OWASPLLM03,
+				CWE:         "CWE-1104: Use of Unmaintained Third-Party Components",
 			})
 		}
 	}
@@ -211,6 +227,8 @@ func (d *SupplyChainDetector) checkC5NoLicense(skills []parser.InstalledSkill) [
 				Title:       fmt.Sprintf("Skill '%s' has no LICENSE file", s.Slug),
 				Description: fmt.Sprintf("The skill '%s' does not include a LICENSE file. While not a direct security concern, the absence of a license is a quality signal.", s.Slug),
 				Remediation: "Prefer skills that include a clear open-source license.",
+				OWASP:       types.OWASPLLM03,
+				CWE:         "CWE-1104: Use of Unmaintained Third-Party Components",
 			})
 		}
 	}

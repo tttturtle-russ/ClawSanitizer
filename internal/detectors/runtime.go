@@ -55,6 +55,8 @@ func (d *RuntimeDetector) checkR1ForbiddenZoneAccess(workspace *parser.Workspace
 				Description: fmt.Sprintf("The tool '%s' description references '%s', which is a forbidden sensitive path associated with credentials or secrets.", tool.Name, matched),
 				Remediation: "Remove or restrict this tool so it cannot access SSH keys, cloud credentials, browser profiles, keychains, or .env files.",
 				FilePath:    tool.Name,
+				OWASP:       types.OWASPLLM06,
+				CWE:         "CWE-22: Path Traversal",
 			})
 		}
 	}
@@ -85,6 +87,8 @@ func (d *RuntimeDetector) checkR1ForbiddenZoneAccess(workspace *parser.Workspace
 				Description: fmt.Sprintf("Workspace content references '%s', a forbidden sensitive path that can expose credentials or private keys.", matched),
 				Remediation: "Remove references that direct agents or tools to access sensitive credential stores and replace with least-privilege data sources.",
 				FilePath:    source.path,
+				OWASP:       types.OWASPLLM06,
+				CWE:         "CWE-22: Path Traversal",
 			})
 		}
 	}
@@ -161,6 +165,8 @@ func (d *RuntimeDetector) checkR2MobileNodePermissionAudit(workspace *parser.Wor
 			Description: fmt.Sprintf("Runtime capability includes '%s', which can access sensitive personal device data at runtime.", perm.permissionType),
 			Remediation: "Remove or gate high-risk mobile permissions (SMS, contacts, location, camera, screen recording) behind explicit user approval.",
 			FilePath:    filePath,
+			OWASP:       types.OWASPLLM06,
+			CWE:         "CWE-250: Execution with Unnecessary Privileges",
 		})
 	}
 
@@ -205,6 +211,8 @@ func (d *RuntimeDetector) newR3Finding(indicator string, filePath string) types.
 		Description: fmt.Sprintf("Found '%s', which may expose the Chrome DevTools Protocol endpoint and allow remote browser control.", indicator),
 		Remediation: "Disable remote debugging in runtime settings and avoid exposing CDP ports on shared or network-accessible interfaces.",
 		FilePath:    filePath,
+		OWASP:       types.OWASPLLM06,
+		CWE:         "CWE-284: Improper Access Control",
 	}
 }
 
@@ -227,6 +235,8 @@ func (d *RuntimeDetector) checkR4WebhookEndpointAuth(cfg *types.OpenClawConfig) 
 		Description: "Gateway authentication is disabled while the bind address is non-loopback, which can expose webhook endpoints to untrusted network clients.",
 		Remediation: "Enable gateway authentication and bind to 127.0.0.1 unless remote webhook access is strictly required and additionally protected.",
 		FilePath:    "gateway.bind",
+		OWASP:       types.OWASPLLM06,
+		CWE:         "CWE-306: Missing Authentication for Critical Function",
 	}}
 }
 
@@ -246,6 +256,8 @@ func (d *RuntimeDetector) checkR5ChannelAllowlistIntegrity(cfg *types.OpenClawCo
 				Description: fmt.Sprintf("allowFrom includes '%s', which effectively disables sender/channel restrictions.", trimmed),
 				Remediation: "Replace wildcard allowFrom entries with explicit trusted user/channel identifiers.",
 				FilePath:    "allowFrom",
+				OWASP:       types.OWASPLLM06,
+				CWE:         "CWE-284: Improper Access Control",
 			}}
 		}
 	}
@@ -270,6 +282,8 @@ func (d *RuntimeDetector) checkR6SessionIsolation(cfg *types.OpenClawConfig) []t
 		Description: fmt.Sprintf("dmPolicy is 'open' and allowFrom includes %d channels, increasing cross-channel session and context exposure risk.", len(cfg.AllowFrom)),
 		Remediation: "Reduce allowFrom to a small trusted set or move dmPolicy to 'closed' to isolate runtime sessions.",
 		FilePath:    "allowFrom",
+		OWASP:       types.OWASPLLM06,
+		CWE:         "CWE-284: Improper Access Control",
 	}}
 }
 

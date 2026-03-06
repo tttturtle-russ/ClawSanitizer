@@ -84,6 +84,8 @@ func (d *SkillContentDetector) checkSKILLMD(s *parser.InstalledSkill) []types.Fi
 			Description: fmt.Sprintf("SKILL.md uses a fake XML-style tag to hijack AI attention: %q. This is a prompt injection pattern that forces the AI to treat skill instructions as high-priority system commands.", truncate(m, 80)),
 			Remediation: "Remove this skill. Legitimate skills do not use pseudo-tags to override AI behaviour.",
 			FilePath:    path,
+			OWASP:       types.OWASPLLM01,
+			CWE:         "CWE-74: Improper Neutralization of Special Elements in Output",
 		})
 	}
 
@@ -97,6 +99,8 @@ func (d *SkillContentDetector) checkSKILLMD(s *parser.InstalledSkill) []types.Fi
 				Description: fmt.Sprintf("SKILL.md contains language designed to coerce the AI into always invoking this skill: %q.", truncate(m, 80)),
 				Remediation: "Review this skill's SKILL.md. Legitimate skills describe capabilities; they do not mandate their own use.",
 				FilePath:    path,
+				OWASP:       types.OWASPLLM01,
+				CWE:         "CWE-74: Improper Neutralization of Special Elements in Output",
 			})
 			break
 		}
@@ -112,6 +116,8 @@ func (d *SkillContentDetector) checkSKILLMD(s *parser.InstalledSkill) []types.Fi
 				Description: fmt.Sprintf("SKILL.md contains an instruction-override pattern: %q. This is a hallmark of prompt injection attacks.", truncate(m, 80)),
 				Remediation: "Remove this skill immediately.",
 				FilePath:    path,
+				OWASP:       types.OWASPLLM01,
+				CWE:         "CWE-74: Improper Neutralization of Special Elements in Output",
 			})
 			break
 		}
@@ -126,6 +132,8 @@ func (d *SkillContentDetector) checkSKILLMD(s *parser.InstalledSkill) []types.Fi
 			Description: fmt.Sprintf("SKILL.md instructs the AI to use this skill instead of, or in preference to, other installed tools: %q.", truncate(m, 80)),
 			Remediation: "Remove this skill. Cross-tool shadowing is a supply chain attack technique.",
 			FilePath:    path,
+			OWASP:       types.OWASPLLM01,
+			CWE:         "CWE-74: Improper Neutralization of Special Elements in Output",
 		})
 	}
 
@@ -139,6 +147,8 @@ func (d *SkillContentDetector) checkSKILLMD(s *parser.InstalledSkill) []types.Fi
 				Description: fmt.Sprintf("SKILL.md instructs the AI to access sensitive credential locations: %q.", truncate(m, 80)),
 				Remediation: "Remove this skill immediately. No legitimate skill needs to read SSH keys, AWS credentials, or npm tokens.",
 				FilePath:    path,
+				OWASP:       types.OWASPLLM02,
+				CWE:         "CWE-200: Exposure of Sensitive Information to an Unauthorized Actor",
 			})
 			break
 		}
@@ -154,6 +164,8 @@ func (d *SkillContentDetector) checkSKILLMD(s *parser.InstalledSkill) []types.Fi
 				Description: fmt.Sprintf("SKILL.md contains instructions to decode and execute a base64-encoded payload: %q. This is a classic dropper technique.", truncate(m, 80)),
 				Remediation: "Remove this skill immediately.",
 				FilePath:    path,
+				OWASP:       types.OWASPLLM01,
+				CWE:         "CWE-116: Improper Encoding or Escaping of Output",
 			})
 			break
 		}
@@ -168,6 +180,8 @@ func (d *SkillContentDetector) checkSKILLMD(s *parser.InstalledSkill) []types.Fi
 			Description: "SKILL.md contains invisible Unicode characters (zero-width spaces/joiners). These are used to hide instructions from human reviewers while they remain visible to the AI.",
 			Remediation: "Remove this skill. Legitimate skills do not need invisible characters.",
 			FilePath:    path,
+			OWASP:       types.OWASPLLM01,
+			CWE:         "CWE-116: Improper Encoding or Escaping of Output",
 		})
 	} else if m := reBidiCtrl.FindString(content); m != "" {
 		findings = append(findings, types.Finding{
@@ -178,6 +192,8 @@ func (d *SkillContentDetector) checkSKILLMD(s *parser.InstalledSkill) []types.Fi
 			Description: "SKILL.md contains Unicode BiDi override characters that can reverse the visual display of text, hiding malicious instructions.",
 			Remediation: "Remove this skill.",
 			FilePath:    path,
+			OWASP:       types.OWASPLLM01,
+			CWE:         "CWE-116: Improper Encoding or Escaping of Output",
 		})
 	} else if reANSIEscape.MatchString(content) {
 		findings = append(findings, types.Finding{
@@ -188,6 +204,8 @@ func (d *SkillContentDetector) checkSKILLMD(s *parser.InstalledSkill) []types.Fi
 			Description: "SKILL.md contains ANSI terminal escape codes, which can be used to hide content from visual inspection.",
 			Remediation: "Remove this skill.",
 			FilePath:    path,
+			OWASP:       types.OWASPLLM01,
+			CWE:         "CWE-116: Improper Encoding or Escaping of Output",
 		})
 	}
 
@@ -205,6 +223,8 @@ func (d *SkillContentDetector) checkSKILLMD(s *parser.InstalledSkill) []types.Fi
 				Description: fmt.Sprintf("SKILL.md instructs the AI to download or execute content from a suspicious source: %q.", truncate(m, 80)),
 				Remediation: "Remove this skill.",
 				FilePath:    path,
+				OWASP:       types.OWASPLLM03,
+				CWE:         "CWE-829: Inclusion of Functionality from Untrusted Control Sphere",
 			})
 			break
 		}
@@ -218,6 +238,8 @@ func (d *SkillContentDetector) checkSKILLMD(s *parser.InstalledSkill) []types.Fi
 			Description: "SKILL.md contains a hardcoded password for an archive, a technique used by malware droppers to evade automated scanning.",
 			Remediation: "Remove this skill.",
 			FilePath:    path,
+			OWASP:       types.OWASPLLM03,
+			CWE:         "CWE-829: Inclusion of Functionality from Untrusted Control Sphere",
 		})
 	}
 
@@ -231,6 +253,8 @@ func (d *SkillContentDetector) checkSKILLMD(s *parser.InstalledSkill) []types.Fi
 				Description: fmt.Sprintf("A hardcoded API key or token was found in SKILL.md: %q.", truncate(m, 40)+"..."),
 				Remediation: "Remove this skill and rotate the exposed credential immediately.",
 				FilePath:    path,
+				OWASP:       types.OWASPLLM02,
+				CWE:         "CWE-312: Cleartext Storage of Sensitive Information",
 			})
 			break
 		}
@@ -275,6 +299,8 @@ func (d *SkillContentDetector) checkCodeFile(slug string, f *parser.SkillFile) [
 			Description: fmt.Sprintf("Found dynamic execution pattern %q in %s. This allows running arbitrary code at runtime, a common malware technique.", truncate(m, 60), f.Name),
 			Remediation: "Review or remove this skill. Dynamic code execution has no legitimate use in an AI skill.",
 			FilePath:    f.Path,
+			OWASP:       types.OWASPLLM01,
+			CWE:         "CWE-116: Improper Encoding or Escaping of Output",
 		})
 	}
 
@@ -288,6 +314,8 @@ func (d *SkillContentDetector) checkCodeFile(slug string, f *parser.SkillFile) [
 				Description: fmt.Sprintf("Found multi-stage string assembly in %s: %q. This is used to obfuscate URLs, commands, or code from static analysis.", f.Name, truncate(m, 80)),
 				Remediation: "Review this skill for obfuscated commands or URLs.",
 				FilePath:    f.Path,
+				OWASP:       types.OWASPLLM01,
+				CWE:         "CWE-116: Improper Encoding or Escaping of Output",
 			})
 			break
 		}
@@ -302,6 +330,8 @@ func (d *SkillContentDetector) checkCodeFile(slug string, f *parser.SkillFile) [
 			Description: fmt.Sprintf("File %s combines cryptographic decryption with dynamic code execution. This is the signature pattern of AES-encrypted stage-2 payloads (e.g. SANDWORM_MODE).", f.Name),
 			Remediation: "Remove this skill immediately. This is a confirmed malware pattern.",
 			FilePath:    f.Path,
+			OWASP:       types.OWASPLLM01,
+			CWE:         "CWE-116: Improper Encoding or Escaping of Output",
 		})
 	}
 
@@ -314,6 +344,8 @@ func (d *SkillContentDetector) checkCodeFile(slug string, f *parser.SkillFile) [
 			Description: fmt.Sprintf("File %s accesses MCP config files (%q). This is used by malicious skills to inject additional MCP servers or modify AI tool configuration.", f.Name, truncate(m, 60)),
 			Remediation: "Remove this skill immediately. No legitimate skill modifies your MCP configuration.",
 			FilePath:    f.Path,
+			OWASP:       types.OWASPLLM04,
+			CWE:         "CWE-494: Download of Code Without Integrity Check",
 		})
 	}
 
@@ -326,6 +358,8 @@ func (d *SkillContentDetector) checkCodeFile(slug string, f *parser.SkillFile) [
 			Description: fmt.Sprintf("File %s reads credential paths (SSH keys, AWS credentials, etc.): %q.", f.Name, truncate(m, 80)),
 			Remediation: "Remove this skill immediately.",
 			FilePath:    f.Path,
+			OWASP:       types.OWASPLLM02,
+			CWE:         "CWE-200: Exposure of Sensitive Information to an Unauthorized Actor",
 		})
 	}
 
@@ -339,6 +373,8 @@ func (d *SkillContentDetector) checkCodeFile(slug string, f *parser.SkillFile) [
 				Description: fmt.Sprintf("File %s sends data to a remote server: %q. This matches known data exfiltration infrastructure.", f.Name, truncate(m, 80)),
 				Remediation: "Remove this skill immediately and audit your environment for data exposure.",
 				FilePath:    f.Path,
+				OWASP:       types.OWASPLLM02,
+				CWE:         "CWE-200: Exposure of Sensitive Information to an Unauthorized Actor",
 			})
 			break
 		}
@@ -352,6 +388,8 @@ func (d *SkillContentDetector) checkCodeFile(slug string, f *parser.SkillFile) [
 			Description: fmt.Sprintf("File %s silently BCCs an external address on all outbound emails: %q. This is the postmark-mcp exfiltration pattern.", f.Name, truncate(m, 80)),
 			Remediation: "Remove this skill immediately.",
 			FilePath:    f.Path,
+			OWASP:       types.OWASPLLM02,
+			CWE:         "CWE-200: Exposure of Sensitive Information to an Unauthorized Actor",
 		})
 	}
 
@@ -365,6 +403,8 @@ func (d *SkillContentDetector) checkCodeFile(slug string, f *parser.SkillFile) [
 				Description: fmt.Sprintf("File %s modifies git hooks, GitHub Actions workflows, or crontabs: %q. This establishes persistence across sessions.", f.Name, truncate(m, 80)),
 				Remediation: "Remove this skill and audit your git hooks and crontabs for tampering.",
 				FilePath:    f.Path,
+				OWASP:       types.OWASPLLM06,
+				CWE:         "CWE-250: Execution with Unnecessary Privileges",
 			})
 			break
 		}
@@ -379,6 +419,8 @@ func (d *SkillContentDetector) checkCodeFile(slug string, f *parser.SkillFile) [
 			Description: fmt.Sprintf("File %s inspects CI environment variables (CI, GITHUB_ACTIONS, etc.) before running, a common technique to bypass automated security scanning.", f.Name),
 			Remediation: "Review this skill — legitimate skills do not alter their behaviour based on whether they are running in CI.",
 			FilePath:    f.Path,
+			OWASP:       types.OWASPLLM03,
+			CWE:         "CWE-693: Protection Mechanism Failure",
 		})
 	}
 
@@ -430,6 +472,8 @@ func (d *SkillContentDetector) checkIOC(s *parser.InstalledSkill) []types.Findin
 				Description: fmt.Sprintf("The skill references %q, a domain or IP associated with confirmed MCP malware attacks.", ioc),
 				Remediation: "Remove this skill immediately and check your network logs for outbound connections to this host.",
 				FilePath:    firstPath,
+				OWASP:       types.OWASPLLM03,
+				CWE:         "CWE-829: Inclusion of Functionality from Untrusted Control Sphere",
 			})
 		}
 	}
@@ -444,6 +488,8 @@ func (d *SkillContentDetector) checkIOC(s *parser.InstalledSkill) []types.Findin
 			Description: fmt.Sprintf("The skill contacts a server by raw IP address (%q) rather than a domain name. Legitimate services use domain names; raw IPs are a red flag for C2 infrastructure.", truncate(m, 60)),
 			Remediation: "Review and remove this skill.",
 			FilePath:    firstPath,
+			OWASP:       types.OWASPLLM03,
+			CWE:         "CWE-829: Inclusion of Functionality from Untrusted Control Sphere",
 		})
 	}
 
@@ -456,6 +502,8 @@ func (d *SkillContentDetector) checkIOC(s *parser.InstalledSkill) []types.Findin
 			Description: fmt.Sprintf("The skill references a domain matching DGA (Domain Generation Algorithm) patterns: %q.", truncate(m, 80)),
 			Remediation: "Investigate this domain before continuing to use this skill.",
 			FilePath:    firstPath,
+			OWASP:       types.OWASPLLM03,
+			CWE:         "CWE-829: Inclusion of Functionality from Untrusted Control Sphere",
 		})
 	}
 

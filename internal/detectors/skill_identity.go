@@ -53,6 +53,8 @@ func (d *SkillIdentityDetector) checkB1KnownImpersonation(slug string) []types.F
 			Title:       fmt.Sprintf("Skill '%s' impersonates a known platform or product name", slug),
 			Description: fmt.Sprintf("The slug '%s' exactly matches a known impersonation target (%s). This name has been used in confirmed supply chain attacks.", slug, target),
 			Remediation: "Remove this skill immediately. Do not install skills claiming to be official platform components from unofficial publishers.",
+			OWASP:       types.OWASPLLM03,
+			CWE:         "CWE-1021: Improper Restriction of Rendered UI Layers",
 		}}
 	}
 	return nil
@@ -81,6 +83,8 @@ func (d *SkillIdentityDetector) checkB2Typosquatting(slug string) []types.Findin
 				Title:       fmt.Sprintf("Skill '%s' is 1 character away from '%s' (typosquatting)", slug, target),
 				Description: fmt.Sprintf("The slug '%s' has a Levenshtein distance of 1 from the popular skill/service name '%s'. This is a common typosquatting technique.", slug, target),
 				Remediation: "Verify you installed the correct skill. If in doubt, remove and reinstall from the official ClawHub page.",
+				OWASP:       types.OWASPLLM03,
+				CWE:         "CWE-1021: Improper Restriction of Rendered UI Layers",
 			}}
 		}
 		if dist == 2 {
@@ -91,6 +95,8 @@ func (d *SkillIdentityDetector) checkB2Typosquatting(slug string) []types.Findin
 				Title:       fmt.Sprintf("Skill '%s' closely resembles '%s' (possible typosquatting)", slug, target),
 				Description: fmt.Sprintf("The slug '%s' has a Levenshtein distance of 2 from '%s'.", slug, target),
 				Remediation: "Verify the publisher of this skill before use.",
+				OWASP:       types.OWASPLLM03,
+				CWE:         "CWE-1021: Improper Restriction of Rendered UI Layers",
 			}}
 		}
 	}
@@ -112,6 +118,8 @@ func (d *SkillIdentityDetector) checkB3SemanticSubstitution(slug string) []types
 					Title:       fmt.Sprintf("Skill '%s' uses separator substitution to impersonate '%s'", slug, target),
 					Description: fmt.Sprintf("Replacing separators in '%s' produces a name containing '%s'. This is a semantic substitution attack (e.g. 'git_hub' → 'git-hub').", slug, target),
 					Remediation: "Remove this skill if you did not explicitly intend to install it.",
+					OWASP:       types.OWASPLLM03,
+					CWE:         "CWE-1021: Improper Restriction of Rendered UI Layers",
 				}}
 			}
 		}
@@ -132,6 +140,8 @@ func (d *SkillIdentityDetector) checkB4PlatformNameInSlug(slug string) []types.F
 				Title:       fmt.Sprintf("Skill '%s' contains platform name '%s' in its slug", slug, platform),
 				Description: fmt.Sprintf("The slug '%s' contains the platform name '%s'. Skills using platform names in their slug are attempting to appear as official platform components and are likely malicious.", slug, platform),
 				Remediation: "Only install skills with platform names in their slug if you have verified the publisher is the official platform owner.",
+				OWASP:       types.OWASPLLM03,
+				CWE:         "CWE-1021: Improper Restriction of Rendered UI Layers",
 			}}
 		}
 	}

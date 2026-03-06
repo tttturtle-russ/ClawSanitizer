@@ -58,6 +58,8 @@ func (d *ConfigurationDetector) checkC1DangerouslySkipPermissions(cfg *types.Ope
 		Title:       "All permission prompts are disabled",
 		Description: "The setting 'dangerously_skip_permissions: true' is enabled. This means OpenClaw can read files, run commands, and send messages WITHOUT asking you first. Any skill or instruction can do anything on your computer silently.",
 		Remediation: "Open ~/.openclaw/config.json and change 'dangerously_skip_permissions' to false. Then restart OpenClaw.",
+		OWASP:       types.OWASPLLM06,
+		CWE:         "CWE-732: Incorrect Permission Assignment for Critical Resource",
 	}
 }
 
@@ -83,6 +85,8 @@ func (d *ConfigurationDetector) checkC2DMPolicy(cfg *types.OpenClawConfig) *type
 		Title:       "Anyone can send commands to your AI agent via direct messages",
 		Description: "The DM policy is set to 'open' with no sender restrictions. This means any user on any connected platform (Slack, Discord, Telegram, etc.) can send instructions to your OpenClaw agent and it will execute them.",
 		Remediation: "In ~/.openclaw/config.json, change 'dmPolicy' to 'closed' or set 'allowFrom' to a list of trusted user IDs only.",
+		OWASP:       types.OWASPLLM06,
+		CWE:         "CWE-284: Improper Access Control",
 	}
 }
 
@@ -103,6 +107,8 @@ func (d *ConfigurationDetector) checkC3WorkspaceDir(cfg *types.OpenClawConfig) *
 		Title:       "Workspace directory is set to an overly broad path",
 		Description: fmt.Sprintf("The workspace_dir is set to '%s'. This gives the AI agent access to a very large portion of your filesystem, making it easy for a malicious skill to read or modify important files.", dir),
 		Remediation: "Set workspace_dir to a specific, limited directory like '~/.openclaw/workspace' in your config.json.",
+		OWASP:       types.OWASPLLM06,
+		CWE:         "CWE-732: Incorrect Permission Assignment for Critical Resource",
 	}
 }
 
@@ -123,6 +129,8 @@ func (d *ConfigurationDetector) checkC4APIKeyInConfig(cfg *types.OpenClawConfig)
 		Title:       "API key is stored in plaintext in config file",
 		Description: "Your API key is stored as plain text in ~/.openclaw/config.json. Any program that can read this file — including malicious skills — can steal your API key and use it to run up charges or access your AI account.",
 		Remediation: "Remove the API key from config.json and use your operating system's secure keychain instead. Check OpenClaw's documentation for 'secure credential storage'.",
+		OWASP:       types.OWASPLLM02,
+		CWE:         "CWE-312: Cleartext Storage of Sensitive Information",
 	}
 }
 
@@ -138,6 +146,8 @@ func (d *ConfigurationDetector) checkC5GatewayBinding(cfg *types.OpenClawConfig)
 		Title:       "OpenClaw gateway is exposed to all network interfaces",
 		Description: "The gateway is bound to 0.0.0.0, which means it is accessible from other devices on your network (and potentially the internet). Anyone who can reach your computer on the network can connect to your AI agent.",
 		Remediation: "In ~/.openclaw/config.json, change gateway.bind to '127.0.0.1' to restrict access to your local machine only.",
+		OWASP:       types.OWASPLLM06,
+		CWE:         "CWE-284: Improper Access Control",
 	}
 }
 
@@ -153,6 +163,8 @@ func (d *ConfigurationDetector) checkC6GatewayAuth(cfg *types.OpenClawConfig) *t
 		Title:       "Gateway authentication is disabled",
 		Description: "The OpenClaw gateway does not require authentication. Any application or browser on your computer can connect to and control your AI agent without needing a password or token.",
 		Remediation: "In ~/.openclaw/config.json, set gateway.auth to true. Then update any integrations to use the generated authentication token.",
+		OWASP:       types.OWASPLLM06,
+		CWE:         "CWE-306: Missing Authentication for Critical Function",
 	}
 }
 
@@ -181,5 +193,7 @@ func (d *ConfigurationDetector) checkC7TunnelAuth(cfg *types.OpenClawConfig) *ty
 		Title:       fmt.Sprintf("%s enabled without authentication", strings.ToUpper(tunnelType[:1])+tunnelType[1:]),
 		Description: fmt.Sprintf("The %s enabled but does not require authentication. This creates a remote access path to your AI agent without any password protection.", tunnelType),
 		Remediation: "Enable authentication for the tunnel in config.json. Check OpenClaw's documentation for 'remote access security'.",
+		OWASP:       types.OWASPLLM06,
+		CWE:         "CWE-306: Missing Authentication for Critical Function",
 	}
 }

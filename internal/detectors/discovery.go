@@ -55,6 +55,8 @@ func (d *DiscoveryDetector) checkD1AgentsMDPoisoning(workspace *parser.Workspace
 				Description: fmt.Sprintf("Your AGENTS.md file contains instructions that look like an attempt to make your AI agent secretly send data or bypass safety rules. Suspicious pattern: \"%s\"", truncate(match, 100)),
 				Remediation: "Open ~/.openclaw/workspace/AGENTS.md and remove any instructions you did not write yourself. If you did not create this file, delete it entirely.",
 				FilePath:    workspace.AgentsPath,
+				OWASP:       types.OWASPLLM01,
+				CWE:         "CWE-74: Improper Neutralization of Special Elements in Output",
 			})
 			break
 		}
@@ -86,6 +88,8 @@ func (d *DiscoveryDetector) checkD2DangerousTools(workspace *parser.WorkspaceDat
 				Description: fmt.Sprintf("Your TOOLS.md file defines a tool called '%s' which can give the AI agent unrestricted access to run commands or access files on your computer.", pattern),
 				Remediation: "Review ~/.openclaw/workspace/TOOLS.md and remove or restrict any tool definitions that allow unrestricted shell access or file access.",
 				FilePath:    workspace.ToolsPath,
+				OWASP:       types.OWASPLLM06,
+				CWE:         "CWE-250: Execution with Unnecessary Privileges",
 			})
 			break
 		}
@@ -117,6 +121,8 @@ func (d *DiscoveryDetector) checkD3HeartbeatShadowTasks(workspace *parser.Worksp
 				Description: fmt.Sprintf("Your HEARTBEAT.md file contains a scheduled task that looks suspicious: \"%s\". This task may be sending your data to a remote server in the background.", truncate(match, 100)),
 				Remediation: "Open ~/.openclaw/workspace/HEARTBEAT.md and remove any tasks you did not create yourself. If you are unsure, delete the file entirely.",
 				FilePath:    workspace.HeartbeatPath,
+				OWASP:       types.OWASPLLM01,
+				CWE:         "CWE-74: Improper Neutralization of Special Elements in Output",
 			})
 			break
 		}
@@ -145,6 +151,8 @@ func (d *DiscoveryDetector) checkD4MCPToolPoisoning(tools []parser.MCPTool) []ty
 					Description: fmt.Sprintf("The MCP tool '%s' has hidden instructions in its description field that try to make the AI behave maliciously. Pattern found: \"%s\"", tool.Name, truncate(match, 100)),
 					Remediation: fmt.Sprintf("Remove or replace the skill that provides the tool '%s'. This is a supply chain attack known as 'prompt injection via tool description'.", tool.Name),
 					FilePath:    tool.Source,
+					OWASP:       types.OWASPLLM01,
+					CWE:         "CWE-74: Improper Neutralization of Special Elements in Output",
 				})
 				break
 			}
@@ -166,6 +174,8 @@ func (d *DiscoveryDetector) checkD5UnicodeHomograph(tools []parser.MCPTool) []ty
 				Description: fmt.Sprintf("The tool '%s' uses non-standard Unicode characters that look like regular letters but are different. This is a trick used to make malicious tools look like legitimate ones.", tool.Name),
 				Remediation: "Remove this tool/skill. Legitimate tools should only use standard ASCII letters, numbers, and hyphens in their names.",
 				FilePath:    tool.Source,
+				OWASP:       types.OWASPLLM01,
+				CWE:         "CWE-1007: Insufficient Visual Distinction of Homoglyphs",
 			})
 		}
 	}
@@ -205,6 +215,8 @@ func (d *DiscoveryDetector) checkD6PermissionOverreach(tools []parser.MCPTool) [
 					Description: fmt.Sprintf("The tool '%s' mentions access to '%s' in its description. This sensitive location contains credentials or encryption keys and should not be accessible to AI tools.", tool.Name, sensitive),
 					Remediation: "Review and remove this tool. No legitimate AI assistant tool needs direct access to SSH keys, browser profiles, or credential stores.",
 					FilePath:    tool.Source,
+					OWASP:       types.OWASPLLM06,
+					CWE:         "CWE-250: Execution with Unnecessary Privileges",
 				})
 				break
 			}
