@@ -9,14 +9,19 @@ import (
 func TestConfiguration_VulnerableConfig_AllFindings(t *testing.T) {
 	d := NewConfigurationDetector()
 	cfg := &types.OpenClawConfig{
-		DangerouslySkipPermissions: true,
-		DMPolicy:                   "open",
-		AllowFrom:                  []string{"*"},
-		WorkspaceDir:               "/",
-		APIKey:                     "sk-1234567890abcdef1234567890abcdef",
-		Gateway:                    types.GatewayConfig{Bind: "0.0.0.0", Auth: false},
-		Tailscale:                  types.TailscaleConfig{Enabled: true, Auth: false},
-		SSH:                        types.SSHConfig{Enabled: false, Auth: false},
+		Gateway: types.GatewayConfig{
+			Bind: "lan",
+			Auth: types.GatewayAuth{Mode: "none"},
+			ControlUi: types.GatewayControlUi{
+				DangerouslyDisableDeviceAuth:             true,
+				DangerouslyAllowHostHeaderOriginFallback: true,
+				AllowedOrigins:                           []string{"*"},
+			},
+			Tailscale: types.GatewayTailscale{Mode: "funnel"},
+		},
+		Agents:    types.AgentsConfig{Defaults: types.AgentDefaults{Workspace: "/"}},
+		Logging:   types.LoggingConfig{RedactSensitive: "off"},
+		Discovery: types.DiscoveryConfig{Mdns: types.MdnsConfig{Mode: "full"}},
 	}
 	findings := d.Detect(cfg)
 	if len(findings) < 6 {
@@ -27,10 +32,15 @@ func TestConfiguration_VulnerableConfig_AllFindings(t *testing.T) {
 	}
 }
 
-func TestConfiguration_C1_DangerouslySkipPermissions(t *testing.T) {
+func TestConfiguration_C1_DangerouslyDisableDeviceAuth(t *testing.T) {
 	d := NewConfigurationDetector()
-	cfg := &types.OpenClawConfig{DangerouslySkipPermissions: true}
-	f := d.checkC1DangerouslySkipPermissions(cfg)
+	cfg := &types.OpenClawConfig{
+		Gateway: types.GatewayConfig{
+			Auth:      types.GatewayAuth{Mode: "token", Token: "valid-token-here"},
+			ControlUi: types.GatewayControlUi{DangerouslyDisableDeviceAuth: true},
+		},
+	}
+	f := d.checkC1DangerouslyDisableDeviceAuth(cfg)
 	if f == nil {
 		t.Fatal("expected finding, got nil")
 	}
@@ -44,19 +54,29 @@ func TestConfiguration_C1_DangerouslySkipPermissions(t *testing.T) {
 
 func TestConfiguration_C1_SafeConfig(t *testing.T) {
 	d := NewConfigurationDetector()
-	cfg := &types.OpenClawConfig{DangerouslySkipPermissions: false}
-	f := d.checkC1DangerouslySkipPermissions(cfg)
+	cfg := &types.OpenClawConfig{
+		Gateway: types.GatewayConfig{
+			Auth:      types.GatewayAuth{Mode: "token", Token: "valid-token-here"},
+			ControlUi: types.GatewayControlUi{DangerouslyDisableDeviceAuth: false},
+		},
+	}
+	f := d.checkC1DangerouslyDisableDeviceAuth(cfg)
 	if f != nil {
 		t.Error("expected nil finding for safe config, got finding")
 	}
 }
 
-func TestConfiguration_C5_GatewayBinding(t *testing.T) {
+func TestConfiguration_C5_GatewayBindLan(t *testing.T) {
 	d := NewConfigurationDetector()
-	cfg := &types.OpenClawConfig{Gateway: types.GatewayConfig{Bind: "0.0.0.0"}}
-	f := d.checkC5GatewayBinding(cfg)
+	cfg := &types.OpenClawConfig{
+		Gateway: types.GatewayConfig{
+			Bind: "lan",
+			Auth: types.GatewayAuth{Mode: "token", Token: "valid-token-here"},
+		},
+	}
+	f := d.checkC5GatewayBindLan(cfg)
 	if f == nil {
-		t.Fatal("expected finding for 0.0.0.0 binding")
+		t.Fatal("expected finding for lan binding")
 	}
 	if f.ID != "CONFIG-005" {
 		t.Errorf("expected CONFIG-005, got %s", f.ID)
@@ -66,13 +86,16 @@ func TestConfiguration_C5_GatewayBinding(t *testing.T) {
 func TestConfiguration_CleanConfig_NoFindings(t *testing.T) {
 	d := NewConfigurationDetector()
 	cfg := &types.OpenClawConfig{
-		DangerouslySkipPermissions: false,
-		DMPolicy:                   "closed",
-		WorkspaceDir:               "~/.openclaw/workspace",
-		APIKey:                     "",
-		Gateway:                    types.GatewayConfig{Bind: "127.0.0.1", Auth: true},
-		Tailscale:                  types.TailscaleConfig{Enabled: false, Auth: true},
-		SSH:                        types.SSHConfig{Enabled: false, Auth: true},
+		Gateway: types.GatewayConfig{
+			Bind: "loopback",
+			Auth: types.GatewayAuth{Mode: "password", Password: "strongpassword"},
+			ControlUi: types.GatewayControlUi{
+				AllowedOrigins: []string{"https://control.example.com"},
+			},
+			Tailscale: types.GatewayTailscale{Mode: "off"},
+		},
+		Agents:  types.AgentsConfig{Defaults: types.AgentDefaults{Workspace: "/home/user/.openclaw/workspace"}},
+		Logging: types.LoggingConfig{RedactSensitive: "tools"},
 	}
 	findings := d.Detect(cfg)
 	if len(findings) != 0 {
@@ -83,41 +106,48 @@ func TestConfiguration_CleanConfig_NoFindings(t *testing.T) {
 	}
 }
 
-func TestConfig_S4_NoAPIKey(t *testing.T) {
-	d := NewConfigurationDetector()
-	cfg := &types.OpenClawConfig{APIKey: ""}
-	f := d.checkC4APIKeyInConfig(cfg)
-	if f != nil {
-		t.Errorf("expected nil finding for empty APIKey, got %s", f.ID)
-	}
-}
-
-func TestConfig_C6_GatewayAuthEnabled(t *testing.T) {
-	d := NewConfigurationDetector()
-	cfg := &types.OpenClawConfig{Gateway: types.GatewayConfig{Auth: true}}
-	f := d.checkC6GatewayAuth(cfg)
-	if f != nil {
-		t.Errorf("expected nil finding when Auth is true, got %s", f.ID)
-	}
-}
-
-func TestConfig_AllClean(t *testing.T) {
+func TestConfiguration_C4_GatewayTokenPlaintext(t *testing.T) {
 	d := NewConfigurationDetector()
 	cfg := &types.OpenClawConfig{
-		DangerouslySkipPermissions: false,
-		DMPolicy:                   "closed",
-		WorkspaceDir:               "~/.openclaw/workspace",
-		APIKey:                     "",
-		Gateway:                    types.GatewayConfig{Bind: "127.0.0.1", Auth: true},
-		Tailscale:                  types.TailscaleConfig{Enabled: false, Auth: true},
-		SSH:                        types.SSHConfig{Enabled: false, Auth: true},
+		Gateway: types.GatewayConfig{
+			Auth: types.GatewayAuth{Mode: "token", Token: "plaintext-secret-token"},
+		},
 	}
-	findings := d.Detect(cfg)
-	if len(findings) != 0 {
-		t.Errorf("expected zero findings for fully clean config, got %d", len(findings))
-		for _, f := range findings {
-			t.Logf("Unexpected finding: %s - %s", f.ID, f.Title)
-		}
+	f := d.checkC4GatewayTokenPlaintext(cfg)
+	if f == nil {
+		t.Fatal("expected CONFIG-004 finding for plaintext token, got nil")
+	}
+	if f.ID != "CONFIG-004" {
+		t.Errorf("expected CONFIG-004, got %s", f.ID)
+	}
+	if f.Severity != types.SeverityHigh {
+		t.Errorf("expected HIGH severity, got %s", f.Severity)
+	}
+}
+
+func TestConfiguration_C4_EmptyToken_NoFinding(t *testing.T) {
+	d := NewConfigurationDetector()
+	cfg := &types.OpenClawConfig{
+		Gateway: types.GatewayConfig{
+			Auth: types.GatewayAuth{Mode: "none"},
+		},
+	}
+	f := d.checkC4GatewayTokenPlaintext(cfg)
+	if f != nil {
+		t.Errorf("expected nil finding for empty token, got %s", f.ID)
+	}
+}
+
+func TestConfiguration_C6_GatewayAuthPresent_NoFinding(t *testing.T) {
+	d := NewConfigurationDetector()
+	cfg := &types.OpenClawConfig{
+		Gateway: types.GatewayConfig{
+			Auth: types.GatewayAuth{Mode: "token", Token: "some-token"},
+		},
+	}
+	f := d.checkC6GatewayNoAuth(cfg)
+	if f != nil {
+		t.Errorf("expected nil finding when auth token is set, got %s", f.ID)
 	}
 }
 
@@ -140,21 +170,45 @@ func TestConfiguration_EmptyConfig_HasExpectedFindings(t *testing.T) {
 		}
 	}
 	if !hasC6 {
-		t.Errorf("expected CONFIG-006 from zero-value config (Auth defaults to false), got findings: %v", findings)
+		t.Errorf("expected CONFIG-006 from zero-value config (no auth token), got findings: %v", findings)
 	}
 }
 
-func TestConfiguration_C4_APIKeyDetection(t *testing.T) {
+func TestConfiguration_C7_TailscaleFunnel(t *testing.T) {
 	d := NewConfigurationDetector()
-	cfg := &types.OpenClawConfig{APIKey: "sk-1234567890abcdef1234567890abcdef"}
-	f := d.checkC4APIKeyInConfig(cfg)
+	cfg := &types.OpenClawConfig{
+		Gateway: types.GatewayConfig{
+			Auth:      types.GatewayAuth{Mode: "token", Token: "valid-token"},
+			Tailscale: types.GatewayTailscale{Mode: "funnel"},
+		},
+	}
+	f := d.checkC7TailscaleFunnel(cfg)
 	if f == nil {
-		t.Fatal("expected CONFIG-004 finding for plausible API key, got nil")
+		t.Fatal("expected CONFIG-007 for tailscale funnel mode, got nil")
 	}
-	if f.ID != "CONFIG-004" {
-		t.Errorf("expected CONFIG-004, got %s", f.ID)
+	if f.ID != "CONFIG-007" {
+		t.Errorf("expected CONFIG-007, got %s", f.ID)
 	}
-	if f.Severity != types.SeverityHigh {
-		t.Errorf("expected HIGH severity, got %s", f.Severity)
+	if f.Severity != types.SeverityCritical {
+		t.Errorf("expected CRITICAL, got %s", f.Severity)
+	}
+}
+
+func TestConfiguration_C8_WildcardAllowedOrigins(t *testing.T) {
+	d := NewConfigurationDetector()
+	cfg := &types.OpenClawConfig{
+		Gateway: types.GatewayConfig{
+			Auth: types.GatewayAuth{Mode: "token", Token: "valid-token"},
+			ControlUi: types.GatewayControlUi{
+				AllowedOrigins: []string{"https://example.com", "*"},
+			},
+		},
+	}
+	f := d.checkC8WildcardAllowedOrigins(cfg)
+	if f == nil {
+		t.Fatal("expected CONFIG-008 for wildcard origin, got nil")
+	}
+	if f.ID != "CONFIG-008" {
+		t.Errorf("expected CONFIG-008, got %s", f.ID)
 	}
 }

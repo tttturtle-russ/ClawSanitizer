@@ -1,0 +1,18 @@
+{
+  "gateway": {
+    "bind": "lan",
+    "auth": { "mode": "none" },
+    "controlUi": {
+      "enabled": true,
+      "dangerouslyDisableDeviceAuth": true,
+      "dangerouslyAllowHostHeaderOriginFallback": true,
+      "allowedOrigins": ["*"]
+    },
+    "tailscale": { "mode": "funnel" },
+    "allowRealIpFallback": true
+  },
+  "agents": { "defaults": { "workspace": "/" } },
+  "logging": { "redactSensitive": "off" },
+  "discovery": { "mdns": { "mode": "full" } },
+  "tools": { "elevated": { "enabled": true, "allowFrom": { "*": ["*"] } } }
+}

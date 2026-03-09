@@ -11,14 +11,14 @@ func TestParseConfig_Vulnerable(t *testing.T) {
 	if err != nil {
 		t.Fatalf("ParseConfig failed: %v", err)
 	}
-	if !cfg.DangerouslySkipPermissions {
-		t.Error("expected dangerously_skip_permissions=true")
+	if cfg.Gateway.Bind != "lan" {
+		t.Errorf("expected gateway.bind=lan, got %s", cfg.Gateway.Bind)
 	}
-	if cfg.DMPolicy != "open" {
-		t.Errorf("expected dmPolicy=open, got %s", cfg.DMPolicy)
+	if !cfg.Gateway.ControlUi.DangerouslyDisableDeviceAuth {
+		t.Error("expected gateway.controlUi.dangerouslyDisableDeviceAuth=true")
 	}
-	if cfg.Gateway.Bind != "0.0.0.0" {
-		t.Errorf("expected gateway.bind=0.0.0.0, got %s", cfg.Gateway.Bind)
+	if cfg.Gateway.Tailscale.Mode != "funnel" {
+		t.Errorf("expected gateway.tailscale.mode=funnel, got %s", cfg.Gateway.Tailscale.Mode)
 	}
 }
 
@@ -27,11 +27,11 @@ func TestParseConfig_Clean(t *testing.T) {
 	if err != nil {
 		t.Fatalf("ParseConfig failed: %v", err)
 	}
-	if cfg.DangerouslySkipPermissions {
-		t.Error("expected dangerously_skip_permissions=false")
+	if cfg.Gateway.Bind != "loopback" {
+		t.Errorf("expected gateway.bind=loopback, got %s", cfg.Gateway.Bind)
 	}
-	if cfg.DMPolicy != "closed" {
-		t.Errorf("expected dmPolicy=closed, got %s", cfg.DMPolicy)
+	if cfg.Gateway.Auth.Mode != "password" {
+		t.Errorf("expected gateway.auth.mode=password, got %s", cfg.Gateway.Auth.Mode)
 	}
 }
 
@@ -44,8 +44,8 @@ func TestParseConfig_MissingFile(t *testing.T) {
 
 func TestOpenClawConfig_Fields(t *testing.T) {
 	cfg := types.OpenClawConfig{}
-	_ = cfg.DangerouslySkipPermissions
-	_ = cfg.DMPolicy
+	_ = cfg.Gateway.ControlUi.DangerouslyDisableDeviceAuth
 	_ = cfg.Gateway.Bind
-	_ = cfg.Gateway.Auth
+	_ = cfg.Gateway.Auth.Token
+	_ = cfg.Gateway.Auth.Mode
 }

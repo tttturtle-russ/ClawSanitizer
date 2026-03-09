@@ -1,0 +1,14 @@
+{
+  "gateway": {
+    "bind": "loopback",
+    "auth": { "mode": "password", "password": "strongpassword" },
+    "controlUi": {
+      "enabled": true,
+      "allowedOrigins": ["https://control.example.com"]
+    },
+    "tailscale": { "mode": "off" },
+    "trustedProxies": ["127.0.0.1"]
+  },
+  "agents": { "defaults": { "workspace": "/home/russ/.openclaw/workspace" } },
+  "logging": { "redactSensitive": "tools" }
+}

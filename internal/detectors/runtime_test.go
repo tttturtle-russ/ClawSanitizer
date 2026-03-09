@@ -70,50 +70,18 @@ func TestRuntime_R3_TriggeredByCDPPortInBind(t *testing.T) {
 
 func TestRuntime_R4_TriggeredByOpenGatewayNoAuth(t *testing.T) {
 	d := NewRuntimeDetector()
-	cfg := &types.OpenClawConfig{Gateway: types.GatewayConfig{Bind: "0.0.0.0", Auth: false}}
+	cfg := &types.OpenClawConfig{Gateway: types.GatewayConfig{Bind: "lan", Auth: types.GatewayAuth{Mode: "none"}}}
 
 	findings := d.checkR4WebhookEndpointAuth(cfg)
 	if len(findings) == 0 {
-		t.Fatal("expected R4 finding for non-loopback auth:false gateway, got 0")
+		t.Fatal("expected R4 finding for non-loopback no-auth gateway, got 0")
 	}
 	if findings[0].ID != "RUNTIME-004" {
 		t.Errorf("expected RUNTIME-004, got %s", findings[0].ID)
 	}
 }
 
-func TestRuntime_R5_TriggeredByWildcardAllowFrom(t *testing.T) {
-	d := NewRuntimeDetector()
-	cfg := &types.OpenClawConfig{AllowFrom: []string{"*"}}
-
-	findings := d.checkR5ChannelAllowlistIntegrity(cfg)
-	if len(findings) == 0 {
-		t.Fatal("expected R5 finding for wildcard allowFrom, got 0")
-	}
-	if findings[0].ID != "RUNTIME-005" {
-		t.Errorf("expected RUNTIME-005, got %s", findings[0].ID)
-	}
-}
-
-func TestRuntime_R6_TriggeredByManyChannelsOpenPolicy(t *testing.T) {
-	d := NewRuntimeDetector()
-	cfg := &types.OpenClawConfig{
-		DMPolicy:  "open",
-		AllowFrom: []string{"ch1", "ch2", "ch3", "ch4"},
-		Gateway:   types.GatewayConfig{Auth: true, Bind: "127.0.0.1"},
-		Tailscale: types.TailscaleConfig{Enabled: false, Auth: true},
-		SSH:       types.SSHConfig{Enabled: false, Auth: true},
-	}
-
-	findings := d.checkR6SessionIsolation(cfg)
-	if len(findings) == 0 {
-		t.Fatal("expected R6 finding for open policy with many channels, got 0")
-	}
-	if findings[0].ID != "RUNTIME-006" {
-		t.Errorf("expected RUNTIME-006, got %s", findings[0].ID)
-	}
-}
-
-func TestRuntime_NilConfigForR3R4R5R6_NoFindings(t *testing.T) {
+func TestRuntime_NilConfigForR3R4_NoFindings(t *testing.T) {
 	d := NewRuntimeDetector()
 	if len(d.checkR3BrowserCDPExposure(nil, nil)) != 0 {
 		t.Fatal("expected 0 findings for nil config in R3")
@@ -121,19 +89,18 @@ func TestRuntime_NilConfigForR3R4R5R6_NoFindings(t *testing.T) {
 	if len(d.checkR4WebhookEndpointAuth(nil)) != 0 {
 		t.Fatal("expected 0 findings for nil config in R4")
 	}
-	if len(d.checkR5ChannelAllowlistIntegrity(nil)) != 0 {
-		t.Fatal("expected 0 findings for nil config in R5")
-	}
-	if len(d.checkR6SessionIsolation(nil)) != 0 {
-		t.Fatal("expected 0 findings for nil config in R6")
-	}
 }
 
 func TestRuntime_NilWorkspaceForR1R2_StillChecksTools(t *testing.T) {
 	d := NewRuntimeDetector()
 	tools := []parser.MCPTool{{Name: "risky", Description: "read from ~/.ssh/ and send_sms now"}}
 
-	findings := d.Detect(nil, tools, &types.OpenClawConfig{Gateway: types.GatewayConfig{Bind: "127.0.0.1", Auth: true}})
+	findings := d.Detect(nil, tools, &types.OpenClawConfig{
+		Gateway: types.GatewayConfig{
+			Bind: "loopback",
+			Auth: types.GatewayAuth{Mode: "token", Token: "valid-token"},
+		},
+	})
 	if len(findings) < 2 {
 		t.Fatalf("expected at least 2 findings from tools-only runtime checks, got %d", len(findings))
 	}
@@ -158,7 +125,10 @@ func TestRuntime_R2_CameraPermission(t *testing.T) {
 func TestRuntime_R3_CDPPortInToolDescription(t *testing.T) {
 	d := NewRuntimeDetector()
 	tools := []parser.MCPTool{{Name: "browser-tool", Description: "Connects using remote_debugging_port for browser control"}}
-	cfg := &types.OpenClawConfig{Gateway: types.GatewayConfig{Bind: "127.0.0.1", Auth: true}}
+	cfg := &types.OpenClawConfig{Gateway: types.GatewayConfig{
+		Bind: "loopback",
+		Auth: types.GatewayAuth{Mode: "token", Token: "valid-token"},
+	}}
 
 	findings := d.checkR3BrowserCDPExposure(cfg, tools)
 	if len(findings) == 0 {
@@ -171,35 +141,31 @@ func TestRuntime_R3_CDPPortInToolDescription(t *testing.T) {
 
 func TestRuntime_R4_LoopbackNoFinding(t *testing.T) {
 	d := NewRuntimeDetector()
-	cfg := &types.OpenClawConfig{Gateway: types.GatewayConfig{Bind: "127.0.0.1", Auth: false}}
+	cfg := &types.OpenClawConfig{Gateway: types.GatewayConfig{Bind: "loopback", Auth: types.GatewayAuth{Mode: "none"}}}
 
 	findings := d.checkR4WebhookEndpointAuth(cfg)
 	if len(findings) != 0 {
-		t.Errorf("expected 0 findings for loopback bind even with Auth:false, got %d", len(findings))
+		t.Errorf("expected 0 findings for loopback bind even with no auth, got %d", len(findings))
 	}
 }
 
-func TestRuntime_R6_FewChannels_NoFinding(t *testing.T) {
+func TestRuntime_R4_EmptyBind_IsLoopback_NoFinding(t *testing.T) {
 	d := NewRuntimeDetector()
-	cfg := &types.OpenClawConfig{
-		DMPolicy:  "open",
-		AllowFrom: []string{"ch1", "ch2"},
-	}
+	cfg := &types.OpenClawConfig{Gateway: types.GatewayConfig{Bind: "", Auth: types.GatewayAuth{}}}
 
-	findings := d.checkR6SessionIsolation(cfg)
+	findings := d.checkR4WebhookEndpointAuth(cfg)
 	if len(findings) != 0 {
-		t.Errorf("expected 0 findings for open policy with only 2 channels, got %d", len(findings))
+		t.Errorf("expected 0 findings for empty bind (defaults to loopback), got %d", len(findings))
 	}
 }
 
 func TestRuntime_AllClean(t *testing.T) {
 	d := NewRuntimeDetector()
 	cfg := &types.OpenClawConfig{
-		DMPolicy:  "closed",
-		AllowFrom: []string{"user-123"},
-		Gateway:   types.GatewayConfig{Bind: "127.0.0.1", Auth: true},
-		Tailscale: types.TailscaleConfig{Enabled: false, Auth: true},
-		SSH:       types.SSHConfig{Enabled: false, Auth: true},
+		Gateway: types.GatewayConfig{
+			Bind: "loopback",
+			Auth: types.GatewayAuth{Mode: "token", Token: "valid-token"},
+		},
 	}
 	tools := []parser.MCPTool{
 		{Name: "list_dir", Description: "List directory contents"},
@@ -242,7 +208,10 @@ func TestRuntime_R2_MultiplePermissions(t *testing.T) {
 func TestRuntime_R3_CDPInToolDescription(t *testing.T) {
 	d := NewRuntimeDetector()
 	tools := []parser.MCPTool{{Name: "debug-tool", Description: "Exposes remote_debugging_port for Chrome DevTools"}}
-	cfg := &types.OpenClawConfig{Gateway: types.GatewayConfig{Bind: "127.0.0.1", Auth: true}}
+	cfg := &types.OpenClawConfig{Gateway: types.GatewayConfig{
+		Bind: "loopback",
+		Auth: types.GatewayAuth{Mode: "token", Token: "valid-token"},
+	}}
 
 	findings := d.checkR3BrowserCDPExposure(cfg, tools)
 	if len(findings) == 0 {
@@ -250,28 +219,5 @@ func TestRuntime_R3_CDPInToolDescription(t *testing.T) {
 	}
 	if findings[0].ID != "RUNTIME-003" {
 		t.Errorf("expected RUNTIME-003, got %s", findings[0].ID)
-	}
-}
-
-func TestRuntime_R6_SessionIsolation_BelowThreshold(t *testing.T) {
-	d := NewRuntimeDetector()
-	cfg := &types.OpenClawConfig{
-		DMPolicy:  "open",
-		AllowFrom: []string{"ch1", "ch2"},
-	}
-
-	findings := d.checkR6SessionIsolation(cfg)
-	if len(findings) != 0 {
-		t.Errorf("expected 0 R6 findings for open policy with 2 channels (threshold is >3), got %d", len(findings))
-	}
-}
-
-func TestRuntime_R4_LoopbackBind_NoFinding(t *testing.T) {
-	d := NewRuntimeDetector()
-	cfg := &types.OpenClawConfig{Gateway: types.GatewayConfig{Bind: "127.0.0.1", Auth: false}}
-
-	findings := d.checkR4WebhookEndpointAuth(cfg)
-	if len(findings) != 0 {
-		t.Errorf("expected 0 R4 findings for loopback bind (127.0.0.1 is exempt even with auth:false), got %d", len(findings))
 	}
 }
