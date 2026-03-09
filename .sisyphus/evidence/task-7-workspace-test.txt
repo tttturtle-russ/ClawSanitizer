@@ -1,6 +1,0 @@
-=== RUN   TestParseWorkspace_Vulnerable
---- PASS: TestParseWorkspace_Vulnerable (0.00s)
-=== RUN   TestParseWorkspace_MissingDir
---- PASS: TestParseWorkspace_MissingDir (0.00s)
-PASS
-ok  	github.com/yourusername/clawsanitizer/internal/parser	0.004s

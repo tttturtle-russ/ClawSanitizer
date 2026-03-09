@@ -1,9 +1,0 @@
-Scan an OpenClaw installation for security vulnerabilities
-
-Usage:
-  clawsanitizer scan [flags]
-
-Flags:
-  -h, --help          help for scan
-      --json          output results as JSON
-      --path string   path to OpenClaw installation (default "~/.openclaw/")

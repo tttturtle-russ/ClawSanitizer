@@ -1,7 +1,0 @@
-# Test 3: --path flag override
-# Expected: --path flag should override positional argument (vulnerable-config > clean-config)
-# Command: ./clawsanitizer scan testdata/clean-config --path testdata/vulnerable-config
-
-Scanning: testdata/vulnerable-config
-
-# RESULT: PASS - --path flag correctly overrides positional argument (highest precedence)

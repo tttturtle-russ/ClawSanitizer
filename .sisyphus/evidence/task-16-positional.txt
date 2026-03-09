@@ -1,7 +1,0 @@
-# Test 2: Positional argument precedence
-# Expected: Should use positional argument value (testdata/clean-config)
-# Command: ./clawsanitizer scan testdata/clean-config
-
-Scanning: testdata/clean-config
-
-# RESULT: PASS - Positional argument correctly overrides default

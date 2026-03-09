@@ -1,7 +1,0 @@
-# Test 1: Default path (~/.openclaw/)
-# Expected: Should error because path does not exist
-# Command: ./clawsanitizer scan
-
-Error: path not found: /home/russ/.openclaw
-
-# RESULT: PASS - Default path resolution works correctly

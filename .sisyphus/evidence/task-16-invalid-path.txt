@@ -1,8 +1,0 @@
-# Test 4: Invalid path error handling
-# Expected: Should print error to stderr and exit with code 2
-# Command: ./clawsanitizer scan /nonexistent/path
-
-Error: path not found: /nonexistent/path
-EXIT:2
-
-# RESULT: PASS - Invalid path correctly produces error and exit code 2
