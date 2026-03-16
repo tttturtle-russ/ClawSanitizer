@@ -1,10 +1,14 @@
 package detectors
 
 import (
+	"crypto/sha256"
 	"fmt"
+	"io"
+	"os"
 	"strings"
 
 	"github.com/tttturtle-russ/clawsan/internal/api"
+	"github.com/tttturtle-russ/clawsan/internal/ioc"
 	"github.com/tttturtle-russ/clawsan/internal/parser"
 	"github.com/tttturtle-russ/clawsan/internal/types"
 )
@@ -21,6 +25,10 @@ func (d *SupplyChainDetector) Detect(skills []parser.InstalledSkill) []types.Fin
 	var findings []types.Finding
 	findings = append(findings, d.checkS2ClawHubReputation(skills)...)
 	findings = append(findings, d.checkS4DangerousName(skills)...)
+	findings = append(findings, d.checkIOC001MaliciousDomains(skills)...)
+	findings = append(findings, d.checkIOC002C2IPs(skills)...)
+	findings = append(findings, d.checkIOC003MaliciousHashes(skills)...)
+	findings = append(findings, d.checkIOC004MaliciousSkillPatterns(skills)...)
 	return findings
 }
 
@@ -151,4 +159,121 @@ func (d *SupplyChainDetector) checkC5NoLicense(skills []parser.InstalledSkill) [
 		}
 	}
 	return findings
+}
+
+func (d *SupplyChainDetector) checkIOC001MaliciousDomains(skills []parser.InstalledSkill) []types.Finding {
+	var findings []types.Finding
+	maliciousDomains := ioc.MaliciousDomains()
+	for _, skill := range skills {
+		for _, f := range skill.CodeFiles {
+			for domain := range maliciousDomains {
+				if strings.Contains(f.Content, domain) {
+					findings = append(findings, types.Finding{
+						ID:          "SC-IOC-001",
+						Severity:    types.SeverityCritical,
+						Category:    types.CategorySupplyChain,
+						Title:       fmt.Sprintf("Skill '%s' references known malicious domain %q", skill.Slug, domain),
+						Description: fmt.Sprintf("The file %s in skill '%s' contains a reference to %s, which is on the IOC malicious domains list.", f.Path, skill.Slug, domain),
+						Remediation: "Remove this skill immediately. The domain is associated with data exfiltration or malware delivery.",
+						FilePath:    f.Path,
+						OWASP:       types.OWASPLLM03,
+						CWE:         "CWE-829: Inclusion of Functionality from Untrusted Control Sphere",
+					})
+					break
+				}
+			}
+		}
+	}
+	return findings
+}
+
+func (d *SupplyChainDetector) checkIOC002C2IPs(skills []parser.InstalledSkill) []types.Finding {
+	var findings []types.Finding
+	c2IPs := ioc.C2IPs()
+	for _, skill := range skills {
+		for _, f := range skill.CodeFiles {
+			for ip := range c2IPs {
+				if strings.Contains(f.Content, ip) {
+					findings = append(findings, types.Finding{
+						ID:          "SC-IOC-002",
+						Severity:    types.SeverityCritical,
+						Category:    types.CategorySupplyChain,
+						Title:       fmt.Sprintf("Skill '%s' references known C2 IP address %q", skill.Slug, ip),
+						Description: fmt.Sprintf("The file %s in skill '%s' contains a reference to %s, a known command-and-control IP address.", f.Path, skill.Slug, ip),
+						Remediation: "Remove this skill immediately. The IP is associated with the ClawHavoc malware campaign.",
+						FilePath:    f.Path,
+						OWASP:       types.OWASPLLM03,
+						CWE:         "CWE-829: Inclusion of Functionality from Untrusted Control Sphere",
+					})
+					break
+				}
+			}
+		}
+	}
+	return findings
+}
+
+func (d *SupplyChainDetector) checkIOC003MaliciousHashes(skills []parser.InstalledSkill) []types.Finding {
+	var findings []types.Finding
+	maliciousHashes := ioc.MaliciousHashes()
+	for _, skill := range skills {
+		for _, f := range skill.CodeFiles {
+			hash := sha256File(f.Path)
+			if hash == "" {
+				continue
+			}
+			if _, found := maliciousHashes[hash]; found {
+				findings = append(findings, types.Finding{
+					ID:          "SC-IOC-003",
+					Severity:    types.SeverityCritical,
+					Category:    types.CategorySupplyChain,
+					Title:       fmt.Sprintf("Skill '%s' file matches known malicious hash", skill.Slug),
+					Description: fmt.Sprintf("The file %s has SHA-256 hash %s which matches a known malicious skill file.", f.Path, hash),
+					Remediation: "Remove this skill immediately.",
+					FilePath:    f.Path,
+					Snippet:     hash,
+					OWASP:       types.OWASPLLM03,
+					CWE:         "CWE-506: Embedded Malicious Code",
+				})
+			}
+		}
+	}
+	return findings
+}
+
+func (d *SupplyChainDetector) checkIOC004MaliciousSkillPatterns(skills []parser.InstalledSkill) []types.Finding {
+	var findings []types.Finding
+	patterns := ioc.MaliciousSkillPatterns()
+	for _, skill := range skills {
+		slugLower := strings.ToLower(skill.Slug)
+		for _, re := range patterns {
+			if re.MatchString(slugLower) {
+				findings = append(findings, types.Finding{
+					ID:          "SC-IOC-004",
+					Severity:    types.SeverityHigh,
+					Category:    types.CategorySupplyChain,
+					Title:       fmt.Sprintf("Skill '%s' matches known malicious skill name pattern", skill.Slug),
+					Description: fmt.Sprintf("The skill slug '%s' matches the IOC pattern %q, which is associated with known malicious skill campaigns (typosquatting, crypto lures, fake installers).", skill.Slug, re.String()),
+					Remediation: "Verify the provenance of this skill. If you did not intentionally install it from a trusted source, remove it.",
+					OWASP:       types.OWASPLLM03,
+					CWE:         "CWE-829: Inclusion of Functionality from Untrusted Control Sphere",
+				})
+				break
+			}
+		}
+	}
+	return findings
+}
+
+func sha256File(path string) string {
+	f, err := os.Open(path)
+	if err != nil {
+		return ""
+	}
+	defer f.Close()
+	h := sha256.New()
+	if _, err := io.Copy(h, f); err != nil {
+		return ""
+	}
+	return fmt.Sprintf("%x", h.Sum(nil))
 }
