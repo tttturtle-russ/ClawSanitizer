@@ -22,8 +22,8 @@ func TestScan_VulnerableConfig(t *testing.T) {
 	if result.Score >= 100 {
 		t.Fatalf("expected score < 100, got %d", result.Score)
 	}
-	if result.TotalChecks != 33 {
-		t.Fatalf("expected total checks to be 33, got %d", result.TotalChecks)
+	if result.TotalChecks != 55 {
+		t.Fatalf("expected total checks to be 55, got %d", result.TotalChecks)
 	}
 
 	hasConfiguration := false

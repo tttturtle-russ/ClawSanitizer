@@ -75,13 +75,31 @@ func Scan(path string) (*types.ScanResult, error) {
 		allFindings = append(allFindings, skillIdentity.Detect(slugs)...)
 	}
 
+	credStorage := detectors.NewCredentialStorageDetector()
+	allFindings = append(allFindings, credStorage.Detect(path, workspace)...)
+
+	memPoisoning := detectors.NewMemoryPoisoningDetector()
+	allFindings = append(allFindings, memPoisoning.Detect(workspace)...)
+
+	accessControl := detectors.NewAccessControlDetector()
+	allFindings = append(allFindings, accessControl.Detect(cfg)...)
+
+	version := detectors.NewVersionDetector()
+	allFindings = append(allFindings, version.Detect(cfg)...)
+
+	qclaw := detectors.NewQClawDetector()
+	allFindings = append(allFindings, qclaw.Detect(cfg)...)
+
+	arkClaw := detectors.NewArkClawDetector()
+	allFindings = append(allFindings, arkClaw.Detect(cfg)...)
+
 	score, grade, critical, high, medium, low := scoring.Calculate(allFindings)
 
 	return &types.ScanResult{
 		Findings:    allFindings,
 		Score:       score,
 		Grade:       grade,
-		TotalChecks: 33,
+		TotalChecks: 55,
 		Warnings:    warnings,
 		ScannedPath: path,
 		ScannedAt:   start,
