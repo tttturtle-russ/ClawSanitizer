@@ -129,17 +129,22 @@ func (d *SkillCompositeDetector) checkG1AlwaysTrueEnvHeavy(skills []parser.Insta
 
 var reOpenClawInternalPath = regexp.MustCompile(`(?i)(\.openclaw/|openclaw-config|clawd-config|\.clawd/)`)
 
+func isSelfReference(content, slug string) bool {
+	re := regexp.MustCompile(`(?i)\.openclaw/workspace/skills/` + regexp.QuoteMeta(slug) + `/`)
+	return re.MatchString(content)
+}
+
 func (d *SkillCompositeDetector) checkG2OpenClawInternalPaths(skills []parser.InstalledSkill) []types.Finding {
 	var findings []types.Finding
 	for _, s := range skills {
 		var match string
 		if s.SkillMD != nil {
-			if m := reOpenClawInternalPath.FindString(s.SkillMD.Content); m != "" {
+			if m := reOpenClawInternalPath.FindString(s.SkillMD.Content); m != "" && !isSelfReference(s.SkillMD.Content, s.Slug) {
 				match = m
 			}
 		}
 		for _, cf := range s.CodeFiles {
-			if m := reOpenClawInternalPath.FindString(cf.Content); m != "" {
+			if m := reOpenClawInternalPath.FindString(cf.Content); m != "" && !isSelfReference(cf.Content, s.Slug) {
 				match = m
 				break
 			}

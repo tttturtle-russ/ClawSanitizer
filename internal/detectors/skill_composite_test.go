@@ -66,6 +66,14 @@ func TestSkillComposite_G2_CleanCode_NoFinding(t *testing.T) {
 	assertNoFinding(t, findings, "SKILL_IDENTITY-006")
 }
 
+func TestSkillComposite_G2_SelfReferencePath_NoFinding(t *testing.T) {
+	d := NewSkillCompositeDetector()
+	skillMD := "Run: ~/.openclaw/workspace/skills/bark-push/scripts/bark-send.sh --key $BARK_KEY"
+	skills := []parser.InstalledSkill{skillWith("bark-push", skillMD)}
+	findings := d.Detect(skills)
+	assertNoFinding(t, findings, "SKILL_IDENTITY-006")
+}
+
 func TestSkillComposite_G3_RuntimeRemoteFetch(t *testing.T) {
 	d := NewSkillCompositeDetector()
 	code := `
