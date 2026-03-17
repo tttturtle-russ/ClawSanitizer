@@ -7,8 +7,8 @@ import (
 	"github.com/tttturtle-russ/clawsan/internal/scanner"
 )
 
-// Version is injected at build time via ldflags: -X github.com/tttturtle-russ/clawsan/cmd.Version=v1.x.x
-var Version = "dev"
+// Version is injected at build time via ldflags: -X github.com/tttturtle-russ/clawsan/cmd.Version=v0.0.1
+var Version = "0.0.1"
 
 var rootCmd = &cobra.Command{
 	Use:     "clawsan",
