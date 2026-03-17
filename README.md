@@ -2,10 +2,10 @@
 
 **Security scanner for OpenClaw / Claude AI agent installations**
 
-[![CI](https://github.com/tttturtle-russ/ClawSanitizer/actions/workflows/ci.yml/badge.svg)](https://github.com/tttturtle-russ/ClawSanitizer/actions/workflows/ci.yml)
-[![Go Report Card](https://goreportcard.com/badge/github.com/tttturtle-russ/ClawSanitizer)](https://goreportcard.com/report/github.com/tttturtle-russ/ClawSanitizer)
+[![CI](https://github.com/tttturtle-russ/clawsan/actions/workflows/ci.yml/badge.svg)](https://github.com/tttturtle-russ/clawsan/actions/workflows/ci.yml)
+[![Go Report Card](https://goreportcard.com/badge/github.com/tttturtle-russ/clawsan)](https://goreportcard.com/report/github.com/tttturtle-russ/clawsan)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
-[![GitHub release](https://img.shields.io/github/v/release/tttturtle-russ/ClawSanitizer)](https://github.com/tttturtle-russ/ClawSanitizer/releases/latest)
+[![GitHub release](https://img.shields.io/github/v/release/tttturtle-russ/clawsan)](https://github.com/tttturtle-russ/clawsan/releases/latest)
 
 ClawSanitizer audits your OpenClaw installation against **56 security signals** mapped to the [OWASP Top 10 for LLM Applications 2025](https://owasp.org/www-project-top-10-for-large-language-model-applications/) and CWE. It gives you a security score, grade, and actionable remediation — plus SARIF output for GitHub's Security tab.
 
