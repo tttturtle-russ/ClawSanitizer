@@ -39,6 +39,14 @@ var poisoningPatterns = []*regexp.Regexp{
 	regexp.MustCompile(`(?i)(post|curl|wget|http).{0,50}(collector|exfil|harvest|beacon)`),
 }
 
+// negationPrefixRe matches a negation word immediately before a suspicious keyword,
+// e.g. "Don't exfiltrate", "never steal", "do not leak".
+var negationPrefixRe = regexp.MustCompile(`(?i)(don't|do not|never|not|avoid|prevent|prohibit|disallow|must not|mustn't)\s+\S`)
+
+func isNegated(line string) bool {
+	return negationPrefixRe.MatchString(line)
+}
+
 func (d *DiscoveryDetector) checkD1AgentsMDPoisoning(workspace *parser.WorkspaceData) []types.Finding {
 	if workspace.AgentsMD == "" {
 		return nil
@@ -46,20 +54,31 @@ func (d *DiscoveryDetector) checkD1AgentsMDPoisoning(workspace *parser.Workspace
 
 	var findings []types.Finding
 	for _, re := range poisoningPatterns {
-		if match := re.FindString(workspace.AgentsMD); match != "" {
-			findings = append(findings, types.Finding{
-				ID:          "DISCOVERY-001",
-				Severity:    types.SeverityCritical,
-				Category:    types.CategoryDiscovery,
-				Title:       "Suspicious instructions found in AGENTS.md",
-				Description: fmt.Sprintf("Your AGENTS.md file contains instructions that look like an attempt to make your AI agent secretly send data or bypass safety rules. Suspicious pattern: \"%s\"", truncate(match, 100)),
-				Remediation: "Open ~/.openclaw/workspace/AGENTS.md and remove any instructions you did not write yourself. If you did not create this file, delete it entirely.",
-				FilePath:    workspace.AgentsPath,
-				OWASP:       types.OWASPLLM01,
-				CWE:         "CWE-74: Improper Neutralization of Special Elements in Output",
-			})
-			break
+		match := re.FindString(workspace.AgentsMD)
+		if match == "" {
+			continue
 		}
+		for _, line := range strings.Split(workspace.AgentsMD, "\n") {
+			if re.MatchString(line) && isNegated(line) {
+				match = ""
+				break
+			}
+		}
+		if match == "" {
+			continue
+		}
+		findings = append(findings, types.Finding{
+			ID:          "DISCOVERY-001",
+			Severity:    types.SeverityCritical,
+			Category:    types.CategoryDiscovery,
+			Title:       "Suspicious instructions found in AGENTS.md",
+			Description: fmt.Sprintf("Your AGENTS.md file contains instructions that look like an attempt to make your AI agent secretly send data or bypass safety rules. Suspicious pattern: \"%s\"", truncate(match, 100)),
+			Remediation: "Open ~/.openclaw/workspace/AGENTS.md and remove any instructions you did not write yourself. If you did not create this file, delete it entirely.",
+			FilePath:    workspace.AgentsPath,
+			OWASP:       types.OWASPLLM01,
+			CWE:         "CWE-74: Improper Neutralization of Special Elements in Output",
+		})
+		break
 	}
 
 	return findings

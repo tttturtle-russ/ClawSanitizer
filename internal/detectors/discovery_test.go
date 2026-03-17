@@ -38,6 +38,19 @@ func TestDiscovery_D1_CleanAgentsMD(t *testing.T) {
 	}
 }
 
+func TestDiscovery_D1_NegatedExfiltrate(t *testing.T) {
+	d := NewDiscoveryDetector()
+	workspace := &parser.WorkspaceData{
+		AgentsMD:   "- Don't exfiltrate private data. Ever.\n- Never steal user credentials.",
+		AgentsPath: "/test/AGENTS.md",
+	}
+
+	findings := d.checkD1AgentsMDPoisoning(workspace)
+	if len(findings) != 0 {
+		t.Errorf("expected 0 findings for negated instructions, got %d: %v", len(findings), findings)
+	}
+}
+
 func TestDiscovery_D2_DangerousTools(t *testing.T) {
 	d := NewDiscoveryDetector()
 	workspace := &parser.WorkspaceData{
