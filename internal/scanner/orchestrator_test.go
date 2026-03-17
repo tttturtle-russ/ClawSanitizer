@@ -1,10 +1,18 @@
 package scanner
 
 import (
+	"os"
 	"testing"
 
 	"github.com/tttturtle-russ/clawsan/internal/types"
 )
+
+func TestMain(m *testing.M) {
+	// Git does not preserve 0700/0600 permissions; set them so CRED-001/CRED-002 don't fire on clean-config in CI.
+	_ = os.Chmod("../../testdata/clean-config", 0700)
+	_ = os.Chmod("../../testdata/clean-config/openclaw.json", 0600)
+	os.Exit(m.Run())
+}
 
 func TestScan_VulnerableConfig(t *testing.T) {
 	result, err := Scan("../../testdata/vulnerable-config")

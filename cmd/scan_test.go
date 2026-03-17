@@ -1,12 +1,22 @@
 package cmd_test
 
 import (
+	"os"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/tttturtle-russ/clawsan/internal/scanner"
 	"github.com/tttturtle-russ/clawsan/internal/types"
 )
+
+func TestMain(m *testing.M) {
+	// Git does not preserve directory/file permissions below 0755/0644.
+	// CRED-001 and CRED-002 require 0700/0600 on the install dir and config file.
+	// Set correct permissions here so CI produces the same result as local.
+	_ = os.Chmod("../testdata/clean-config", 0700)
+	_ = os.Chmod("../testdata/clean-config/openclaw.json", 0600)
+	os.Exit(m.Run())
+}
 
 func TestScan_VulnerableConfig(t *testing.T) {
 	result, err := scanner.Scan("../testdata/vulnerable-config")

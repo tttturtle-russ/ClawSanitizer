@@ -26,6 +26,11 @@ jobs:
       - name: Vet
         run: go vet ./...
 
+      - name: Fix testdata permissions
+        run: |
+          chmod 700 testdata/clean-config
+          chmod 600 testdata/clean-config/openclaw.json
+
       - name: Test
         run: go test -race -coverprofile=coverage.out ./...
 
@@ -69,7 +74,10 @@ jobs:
         run: go build -o clawsan .
 
       - name: Scan (produce SARIF)
-        run: ./clawsan scan --output results.sarif . || true
+        run: |
+          chmod 700 testdata/clean-config
+          chmod 600 testdata/clean-config/openclaw.json
+          ./clawsan scan --output results.sarif testdata/clean-config || true
 
       - name: Upload SARIF to GitHub Security tab
         uses: github/codeql-action/upload-sarif@v4
