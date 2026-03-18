@@ -1,21 +1,22 @@
 package api
 
 import (
-	"encoding/json"
 	"fmt"
 	"net/http"
 	"time"
+
+	"github.com/go-resty/resty/v2"
 )
 
 type ClawHubClient struct {
 	BaseURL    string
-	HTTPClient *http.Client
+	HTTPClient *resty.Client
 }
 
 func NewClawHubClient() *ClawHubClient {
 	return &ClawHubClient{
 		BaseURL:    "https://clawhub.ai/api/v1",
-		HTTPClient: &http.Client{Timeout: 5 * time.Second},
+		HTTPClient: resty.New().SetTimeout(time.Second * 5),
 	}
 }
 
@@ -73,14 +74,15 @@ type SkillInfo struct {
 }
 
 func (c *ClawHubClient) CheckSkillReputation(skillName string) (*SkillInfo, error) {
+	var body skillResponse
 	skillURL := fmt.Sprintf("%s/skills/%s", c.BaseURL, skillName)
-	resp, err := c.HTTPClient.Get(skillURL)
+	resp, err := c.HTTPClient.R().SetResult(&body).Get(skillURL)
 	if err != nil {
 		return nil, nil
 	}
-	defer resp.Body.Close()
+	defer resp.RawBody().Close()
 
-	switch resp.StatusCode {
+	switch resp.StatusCode() {
 	case http.StatusNotFound:
 		return &SkillInfo{Slug: skillName, KnownToClawHub: false}, nil
 	case http.StatusForbidden:
@@ -109,11 +111,6 @@ func (c *ClawHubClient) CheckSkillReputation(skillName string) (*SkillInfo, erro
 		return nil, nil
 	}
 
-	var body skillResponse
-	if err := json.NewDecoder(resp.Body).Decode(&body); err != nil {
-		return nil, nil
-	}
-
 	info := &SkillInfo{KnownToClawHub: true}
 	if body.Skill != nil {
 		info.Slug = body.Skill.Slug
@@ -137,20 +134,16 @@ func (c *ClawHubClient) CheckSkillReputation(skillName string) (*SkillInfo, erro
 }
 
 func (c *ClawHubClient) fetchVersionSecurity(info *SkillInfo, version string) {
+	var body versionResponse
 	url := fmt.Sprintf("%s/skills/%s/versions/%s", c.BaseURL, info.Slug, version)
-	resp, err := c.HTTPClient.Get(url)
-	if err != nil || resp.StatusCode != http.StatusOK {
+	resp, err := c.HTTPClient.R().SetResult(&body).Get(url)
+	if err != nil || !resp.IsSuccess() {
 		if resp != nil {
-			resp.Body.Close()
+			resp.RawBody().Close()
 		}
 		return
 	}
-	defer resp.Body.Close()
-
-	var body versionResponse
-	if err := json.NewDecoder(resp.Body).Decode(&body); err != nil {
-		return
-	}
+	defer resp.RawBody().Close()
 
 	if body.Version == nil || body.Version.Security == nil {
 		return
