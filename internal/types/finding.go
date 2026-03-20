@@ -21,6 +21,8 @@ const (
 	CategoryVersion           = "VERSION"
 	CategoryQClaw             = "QCLAW"
 	CategoryArkClaw           = "ARKCLAW"
+	CategorySuspiciousURL     = "SUSPICIOUS_URL"
+	CategoryTaint             = "TAINT"
 )
 
 const (
