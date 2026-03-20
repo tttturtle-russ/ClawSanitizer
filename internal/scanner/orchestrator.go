@@ -96,13 +96,21 @@ func Scan(path string) (*types.ScanResult, error) {
 	scEnv := detectors.NewSupplyChainEnvDetector()
 	allFindings = append(allFindings, scEnv.Detect(cfg)...)
 
+	suspiciousURL := detectors.NewSuspiciousURLDetector()
+	allFindings = append(allFindings, suspiciousURL.Detect(workspace, installedSkills)...)
+
+	if len(installedSkills) > 0 {
+		taint := detectors.NewTaintDetector()
+		allFindings = append(allFindings, taint.Detect(installedSkills)...)
+	}
+
 	score, grade, critical, high, medium, low := scoring.Calculate(allFindings)
 
 	return &types.ScanResult{
 		Findings:    allFindings,
 		Score:       score,
 		Grade:       grade,
-		TotalChecks: 56,
+		TotalChecks: 58,
 		Warnings:    warnings,
 		ScannedPath: path,
 		ScannedAt:   start,
